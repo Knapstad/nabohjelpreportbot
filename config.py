@@ -1,10 +1,10 @@
 
 headers =  {
 
-    "cookie": "Nabohjelp-web-sessions=s%3A2oXpDsfMPXYp7ZNZMMHCo7JolnqQev5D.JZkD4mQiFF8yg1M7nRg0xsi%2F5CQhX2aQdOej1zFfr8k"
+    "cookie": "nabohjelp web session"
 }
 
-cloud_credentials = "obos-225315-4adb95aa0d92.json"
+cloud_credentials = "your cloud config file"
 
 bucket_name = "Your bucket name"
 
