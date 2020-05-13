@@ -50,10 +50,10 @@ def save_posts_to_cloud(
 
 
 @retry_on_connection_error()
-def get_reported_posts() -> Tuple[Any, str]:
+def get_reported_posts():
     response = requests.get(config.nabohjelp_api, headers=config.headers)
     if response.status_code == 200:
-        return response.json(), response.text
+        return response.json()
     elif response.status_code == 404:
         raise NotFound("Page Not Found")
     elif response.status_code == 401:
@@ -95,10 +95,14 @@ def main(*args, **kwargs):
     )
     print(posts)
     data = get_reported_posts()
-    for i in data[0]:
-        if i["postId"] not in posts:
-            posts.append(i["postId"])
+    try:
+        for i in data:
+            if i["postId"] not in posts:
+                posts.append(i["postId"])
+                send_slack_message(SLACK_HOOK, make_slack_message(i))
+    finally:
+        save_posts_to_cloud(client, posts, BLOB_NAME, BUCKET_NAME)
 
 
 if __name__ == "__main__":
-    main()
+    pass
