@@ -27,7 +27,7 @@ def retry_on_connection_error(max_retry: int = 3):
 
 
 @retry_on_connection_error()
-def load_posts_log_from_cloud(
+def load_from_cloud(
     client: "google.cloud.storage.client.Client", blob_name: str, bucket_name: str
 ):
     bucket = client.get_bucket(bucket_name)
@@ -36,7 +36,7 @@ def load_posts_log_from_cloud(
 
 
 @retry_on_connection_error()
-def save_posts_to_cloud(
+def save_to_cloud(
     client: "google.cloud.storage.client.Client",
     data: list,
     blob_name: str,
@@ -62,10 +62,10 @@ def get_reported_posts():
         raise Exception(response.status_code, response.text)
 
 
-def make_slack_message(data: dict) -> str:
+def make_slack_message(data: dict, users) -> str:
     if len(data["description"]) > 20:
         data["description"] = f"{data['description'][:20]}..."
-    message = f"Post er rapportert:\n\nId:  *{data['postId']}*\nTittel:  *{data['title']}*\nMelding:  *{data['description']}*\nStatus:  *{data['status']}*\nType:  *{data['postType']}*"
+    message = f"Post er rapportert:\n\nId:  *{data['postId']}*\nTittel:  *{data['title']}*\nMelding:  *{data['description']}*\nStatus:  *{data['status']}*\nType:  *{data['postType']}*\nBruker Rapportert:  *{users.count(data['ownerId'])} ganger*"
     return message
 
 
@@ -84,14 +84,19 @@ def main(*args, **kwargs):
         config.cloud_credentials, scopes=SCOPES
     )
 
-    BLOB_NAME = config.blob_name
+    USER_BLOB_NAME = config.user_blob_name
+    POST_BLOB_NAME = config.posts_blob_name
     BUCKET_NAME = config.bucket_name
     SLACK_HOOK = config.slack_hook
 
     client = storage.Client(project="obos", credentials=CREDENTIALS)
 
     posts = json.loads(
-        str(load_posts_log_from_cloud(client, BLOB_NAME, BUCKET_NAME), "utf8")
+        str(load_from_cloud(client, POST_BLOB_NAME, BUCKET_NAME), "utf8")
+    )
+
+    users = json.loads(
+        str(load_from_cloud(client, USER_BLOB_NAME, BUCKET_NAME), "utf8")
     )
     print(posts)
     data = get_reported_posts()
@@ -99,9 +104,11 @@ def main(*args, **kwargs):
         for i in data:
             if i["postId"] not in posts:
                 posts.append(i["postId"])
-                send_slack_message(SLACK_HOOK, make_slack_message(i))
+                send_slack_message(SLACK_HOOK, make_slack_message(i, users))
+                users.append(i.ownerId)
     finally:
-        save_posts_to_cloud(client, posts, BLOB_NAME, BUCKET_NAME)
+        save_to_cloud(client, posts, POST_BLOB_NAME, BUCKET_NAME)
+        save_to_cloud(client, users, USER_BLOB_NAME, BUCKET_NAME)
 
 
 if __name__ == "__main__":
