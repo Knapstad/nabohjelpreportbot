@@ -73,7 +73,6 @@ def send_slack_message(hook: str, message: str):
     slackdata = {
         "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": message}}]
     }
-    print(json.dumps(slackdata))
     a = requests.post(hook, data=json.dumps(slackdata))
     return a
 
@@ -98,14 +97,13 @@ def main(*args, **kwargs):
     users = json.loads(
         str(load_from_cloud(client, USER_BLOB_NAME, BUCKET_NAME), "utf8")
     )
-    print(posts)
     data = get_reported_posts()
     try:
         for i in data:
             if i["postId"] not in posts:
                 posts.append(i["postId"])
                 send_slack_message(SLACK_HOOK, make_slack_message(i, users))
-                users.append(i.ownerId)
+                users.append(i["ownerId"])
     finally:
         save_to_cloud(client, posts, POST_BLOB_NAME, BUCKET_NAME)
         save_to_cloud(client, users, USER_BLOB_NAME, BUCKET_NAME)
