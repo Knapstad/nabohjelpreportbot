@@ -62,10 +62,10 @@ def get_reported_posts():
         raise Exception(response.status_code, response.text)
 
 
-def make_slack_message(data: dict, users) -> str:
+def make_slack_message(data: dict) -> str:
     if len(data["description"]) > 20:
         data["description"] = f"{data['description'][:20]}..."
-    message = f"Post er rapportert:\n\nId:  *{data['postId']}*\nTittel:  *{data['title']}*\nMelding:  *{data['description']}*\nStatus:  *{data['status']}*\nType:  *{data['postType']}*\nBruker Rapportert:  *{data['ownerNumberOfReportedPosts'])} poster*"
+    message = f"Post er rapportert:\n\nId:  *{data['postId']}*\nTittel:  *{data['title']}*\nMelding:  *{data['description']}*\nStatus:  *{data['status']}*\nType:  *{data['postType']}*\nBruker Rapportert:  *{data['ownerNumberOfReportedPosts']} poster*"
     return message
 
 
@@ -102,7 +102,7 @@ def main(*args, **kwargs):
         for i in data:
             if i["postId"] not in posts:
                 posts.append(i["postId"])
-                send_slack_message(SLACK_HOOK, make_slack_message(i, users))
+                send_slack_message(SLACK_HOOK, make_slack_message(i))
                 # users.append(int(i["ownerId"]))
     finally:
         save_to_cloud(client, posts, POST_BLOB_NAME, BUCKET_NAME)
